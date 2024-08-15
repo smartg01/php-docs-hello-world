@@ -1,0 +1,52 @@
+name: Deploy PHP App to Azure Web App
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  AZURE_WEBAPP_NAME: proud-bay-484b9c9e1a724bc79e032a4425e8cacb        # Set this to your Azure Web App name
+  AZURE_WEBAPP_PACKAGE_PATH: '.'          # Set this to the path to your PHP app, defaults to the repository root
+  AZURE_RESOURCE_GROUP: GarethSmart1_rg_4791   # Set this to your Azure resource group name
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: 'Checkout GitHub Action'
+      uses: actions/checkout@v4
+
+    - name: 'Set up PHP'
+      uses: shivammathur/setup-php@v2
+      with:
+        php-version: 8.1                 # Specify the PHP version you are using
+        extensions: mbstring, zip        # Add any required PHP extensions here
+
+    - name: 'Install dependencies'
+      run: |
+        composer install --no-dev        # Run this if you're using Composer
+        npm install                      # Run this if you're using Node.js for frontend assets
+
+    - name: 'Login to Azure'
+      uses: azure/login@v1
+      with:
+        client-id: ${{ secrets.AZURE_CLIENT_ID }}
+        tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+        subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+    - name: 'Deploy to Azure Web App'
+      uses: azure/webapps-deploy@v3
+      with:
+        app-name: ${{ env.AZURE_WEBAPP_NAME }}
+        package: ${{ env.AZURE_WEBAPP_PACKAGE_PATH }}
+
+    - name: 'Logout from Azure'
+      run: |
+        az logout
